@@ -1,103 +1,175 @@
-:root {
-    --bg: #050505;
-    --card: #111115;
-    --neon-blue: #00f2ff;
-    --neon-purple: #9d00ff;
-    --neon-pink: #ff007b;
-    --neon-green: #39ff14;
-    --text: #ffffff;
+let state = {
+    xp: parseInt(localStorage.getItem('arena_xp')) || 0,
+    combo: 0,
+    mode: '',
+    playerHP: 100,
+    aiHP: 100,
+    timer: 60,
+    currentProblem: null,
+    timerInterval: null,
+    aiAttackInterval: null
+};
+
+const PROBLEMS = [
+    {
+        name: "11 Trick",
+        gen: () => {
+            const n = Math.floor(Math.random() * 80) + 11;
+            return { q: `${n} × 11`, a: n * 11, hint: `Split ${n}: ${Math.floor(n/10)} | (${Math.floor(n/10) + n%10}) | ${n%10}` };
+        }
+    },
+    {
+        name: "Square 5",
+        gen: () => {
+            const n = (Math.floor(Math.random() * 9) + 1) * 10 + 5;
+            const first = Math.floor(n/10);
+            return { q: `${n}²`, a: n * n, hint: `${first} × ${first+1} = ${first*(first+1)}, then add 25 at the end.` };
+        }
+    },
+    {
+        name: "Near 100",
+        gen: () => {
+            const n = 99 - Math.floor(Math.random() * 4);
+            const m = Math.floor(Math.random() * 8) + 2;
+            return { q: `${n} × ${m}`, a: n * m, hint: `(100 - ${100-n}) × ${m} = ${100*m} - ${(100-n)*m}` };
+        }
+    },
+    {
+        name: "x9 Rule",
+        gen: () => {
+            const n = Math.floor(Math.random() * 40) + 11;
+            return { q: `${n} × 9`, a: n * 9, hint: `${n} × 10 - ${n} = ${n*10 - n}` };
+        }
+    }
+];
+
+const RANKS = ["Novice", "Scholar", "Mathlete", "Ninja", "Overlord"];
+
+const libraryData = [
+    { title: "Multiplication by 11", desc: "Split the digits and put their sum in the middle.", ex: "35 × 11 = 3 (3+5) 5 = 385" },
+    { title: "Squaring Ends in 5", desc: "Multiply the first digit by (itself + 1) and add 25.", ex: "25² = (2×3) 25 = 625" },
+    { title: "The ×9 Shortcut", desc: "Multiply by 10 and subtract the original number.", ex: "12 × 9 = 120 - 12 = 108" },
+    { title: "Near 100 Strategy", desc: "Treat 98 as (100-2) or 97 as (100-3).", ex: "98 × 6 = 600 - 12 = 588" }
+];
+
+function updateUI() {
+    const level = Math.floor(state.xp / 200);
+    const rank = RANKS[Math.min(level, RANKS.length - 1)];
+    document.getElementById('rank-display').innerText = `Rank: ${rank}`;
+    document.getElementById('xp-val').innerText = state.xp;
+    document.getElementById('next-level-xp').innerText = (level + 1) * 200;
+    document.getElementById('xp-fill').style.width = `${(state.xp % 200) / 2}%`;
+    localStorage.setItem('arena_xp', state.xp);
 }
 
-body {
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+function showLibrary() {
+    document.getElementById('game-menu').classList.add('hidden');
+    document.getElementById('library-screen').classList.remove('hidden');
+    const libBody = document.getElementById('library-content');
+    libBody.innerHTML = libraryData.map(item => `
+        <div class="library-card">
+            <h4>${item.title}</h4>
+            <p>${item.desc}</p>
+            <div class="example-box">Example: ${item.ex}</div>
+        </div>
+    `).join('');
 }
 
-.container {
-    width: 400px;
-    background: var(--card);
-    border: 1px solid #333;
-    padding: 25px;
-    border-radius: 12px;
-    position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+function startGame(mode) {
+    state.mode = mode;
+    state.combo = 0;
+    state.playerHP = 100;
+    state.aiHP = 100;
+    document.getElementById('game-menu').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    
+    if(mode === 'battle') {
+        document.getElementById('battle-stats').classList.remove('hidden');
+        state.aiAttackInterval = setInterval(() => {
+            state.playerHP -= 8;
+            updateHP();
+            triggerShake();
+        }, 5000);
+    }
+    if(mode === 'speed') startTimer();
+    nextQuestion();
 }
 
-/* Stats & XP */
-.stats-top { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; color: var(--neon-blue); }
-.xp-container { height: 6px; background: #222; margin: 8px 0; border-radius: 10px; overflow: hidden; }
-.xp-fill { width: 0%; height: 100%; background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); transition: width 0.4s ease; }
-.xp-info { font-size: 0.7rem; text-align: right; color: #888; }
-
-/* Menu Cards */
-.mode-selector { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-.mode-card {
-    background: #1a1a20;
-    border: 1px solid #333;
-    padding: 12px 15px;
-    text-align: left;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: 0.2s;
-}
-.mode-card:hover { border-color: var(--neon-blue); background: #22222b; }
-.mode-card h3 { margin: 0; color: var(--neon-blue); font-size: 0.9rem; }
-.mode-card p { margin: 4px 0 0; color: #888; font-size: 0.75rem; }
-.library-btn { border-color: var(--neon-purple); }
-.library-btn h3 { color: var(--neon-purple); }
-
-/* Game Elements */
-.glow-text { text-align: center; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); margin: 0; }
-.game-hud { display: flex; justify-content: space-between; margin: 15px 0; font-size: 0.9rem; font-weight: bold; }
-#question-text { font-size: 2.5rem; text-align: center; margin: 20px 0; letter-spacing: 2px; }
-
-/* Input */
-.input-group { display: flex; gap: 10px; }
-#answer-input {
-    flex: 1;
-    background: #000;
-    border: 1px solid #444;
-    color: var(--neon-green);
-    font-size: 1.5rem;
-    padding: 10px;
-    text-align: center;
-    border-radius: 5px;
-}
-#submit-btn {
-    background: var(--neon-blue);
-    border: none;
-    padding: 0 20px;
-    font-weight: bold;
-    border-radius: 5px;
-    cursor: pointer;
+function startTimer() {
+    state.timer = 60;
+    document.getElementById('timer-display').classList.remove('hidden');
+    state.timerInterval = setInterval(() => {
+        state.timer--;
+        document.getElementById('timer-display').innerText = `00:${state.timer < 10 ? '0'+state.timer : state.timer}`;
+        if(state.timer <= 0) endGame("TIME'S UP!");
+    }, 1000);
 }
 
-/* HP Bars */
-#battle-stats { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.hp-bar { width: 100px; height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
-.hp-fill { width: 100%; height: 100%; background: var(--neon-green); transition: 0.3s; }
-.enemy .hp-fill { background: var(--neon-pink); }
+function nextQuestion() {
+    const p = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
+    state.currentProblem = p.gen();
+    document.getElementById('question-text').innerText = state.currentProblem.q;
+    document.getElementById('answer-input').value = '';
+    document.getElementById('answer-input').focus();
+    document.getElementById('combo-meter').innerText = `COMBO: ${state.combo}`;
+}
 
-/* Library */
-.library-grid { max-height: 350px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
-.library-card { background: #1a1a20; padding: 12px; border-radius: 5px; margin-bottom: 10px; border-left: 3px solid var(--neon-blue); }
-.library-card h4 { margin: 0 0 5px; color: var(--neon-blue); font-size: 0.9rem; }
-.library-card p { font-size: 0.75rem; color: #bbb; margin: 0; }
-.example-box { background: #000; color: var(--neon-green); padding: 5px; font-size: 0.8rem; margin-top: 8px; border-radius: 3px; }
+function checkAnswer() {
+    const val = parseInt(document.getElementById('answer-input').value);
+    if(val === state.currentProblem.a) {
+        state.combo++;
+        state.xp += 20;
+        if(state.mode === 'battle') state.aiHP -= 20;
+        if(state.mode === 'training') {
+            showResult("CORRECT", state.currentProblem.hint, 20);
+        } else {
+            nextQuestion();
+        }
+    } else {
+        state.combo = 0;
+        if(state.mode === 'battle') state.playerHP -= 15;
+        triggerShake();
+        showResult("WRONG", `Correct was ${state.currentProblem.a}. Shortcut: ${state.currentProblem.hint}`, 0);
+    }
+    updateHP();
+    updateUI();
+}
 
-/* Modal */
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal-content { background: var(--card); border: 1px solid var(--neon-blue); padding: 30px; text-align: center; width: 80%; border-radius: 10px; }
-#explanation-box { font-size: 0.85rem; color: #ccc; margin: 15px 0; line-height: 1.4; }
-.highlight { color: var(--neon-blue); font-size: 1.2rem; }
-.menu-btn, .restart-btn { background: none; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-top: 10px; width: 100%; }
+function updateHP() {
+    if(state.mode !== 'battle') return;
+    document.getElementById('player-hp').style.width = state.playerHP + '%';
+    document.getElementById('ai-hp').style.width = state.aiHP + '%';
+    if(state.playerHP <= 0) endGame("AI DEFEATED YOU");
+    if(state.aiHP <= 0) endGame("AI DESTROYED!");
+}
 
-.hidden { display: none !important; }
-.shake { animation: shake 0.3s; }
-@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+function triggerShake() {
+    const container = document.getElementById('main-container');
+    container.classList.add('shake');
+    setTimeout(() => container.classList.remove('shake'), 300);
+}
+
+function showResult(title, explain, xp) {
+    document.getElementById('result-title').innerText = title;
+    document.getElementById('explanation-box').innerText = explain;
+    document.getElementById('reward-xp').innerText = xp;
+    document.getElementById('result-modal').classList.remove('hidden');
+}
+
+function endGame(msg) {
+    clearInterval(state.timerInterval);
+    clearInterval(state.aiAttackInterval);
+    showResult("GAME OVER", msg, state.combo * 10);
+}
+
+function showMenu() {
+    clearInterval(state.timerInterval);
+    clearInterval(state.aiAttackInterval);
+    document.querySelectorAll('.screen, .modal, #battle-stats, #timer-display').forEach(el => el.classList.add('hidden'));
+    document.getElementById('game-menu').classList.remove('hidden');
+}
+
+document.getElementById('submit-btn').onclick = checkAnswer;
+document.getElementById('answer-input').onkeyup = (e) => e.key === 'Enter' && checkAnswer();
+
+updateUI();

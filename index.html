@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mental Arena Pro</title>
+    <title>Mental Arena Pro | Ultimate Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container" id="main-container">
         <header>
             <div class="stats-top">
-                <span id="rank-display">Rank: Beginner</span>
-                <span id="multiplier-badge" class="hidden">2x MULTIPLIER</span>
+                <span id="rank-display">Rank: Novice</span>
+                <span id="multiplier-badge" class="hidden">STREAK ACTIVE</span>
             </div>
             <div class="xp-container">
                 <div class="xp-fill" id="xp-fill"></div>
@@ -23,43 +23,43 @@
             <h1 class="glow-text">MENTAL ARENA</h1>
             <div class="mode-selector">
                 <button class="mode-card" onclick="startGame('training')">
-                    <h3>TRAINING</h3>
-                    <p>Learn shortcuts with guided hints</p>
+                    <h3>TRAINING MODE</h3>
+                    <p>Practice with explanations & step-by-step guides</p>
                 </button>
                 <button class="mode-card" onclick="startGame('speed')">
-                    <h3>SPEED RUN</h3>
-                    <p>60s High-Pressure Challenge</p>
+                    <h3>SPEED CHALLENGE</h3>
+                    <p>60 seconds to score maximum points</p>
                 </button>
                 <button class="mode-card" onclick="startGame('battle')">
                     <h3>BATTLE AI</h3>
-                    <p>Fight against the Neural Overlord</p>
+                    <p>Defeat the Neural Overlord in combat</p>
                 </button>
                 <button class="mode-card library-btn" onclick="showLibrary()">
-                    <h3>SHORTCUT LIBRARY</h3>
-                    <p>Study the secrets of mental math</p>
+                    <h3>THE VAULT (LIBRARY)</h3>
+                    <p>Advanced Mental Math Techniques</p>
                 </button>
             </div>
         </main>
 
         <section id="game-screen" class="screen hidden">
+            <div class="arena-header">
+                <button class="back-link" onclick="confirmExit()">← EXIT</button>
+                <div id="timer-display" class="hud-item hidden">00:60</div>
+            </div>
+
             <div id="battle-stats" class="hidden">
                 <div class="hp-block">
-                    <label>PLAYER</label>
+                    <label>YOU</label>
                     <div class="hp-bar"><div id="player-hp" class="hp-fill"></div></div>
                 </div>
-                <div class="vs-text">VS</div>
                 <div class="hp-block">
-                    <label>AI NEURAL</label>
+                    <label>AI</label>
                     <div class="hp-bar enemy"><div id="ai-hp" class="hp-fill"></div></div>
                 </div>
             </div>
 
-            <div class="game-hud">
-                <div id="timer-display" class="hud-item hidden">00:60</div>
-                <div id="combo-meter" class="hud-item">COMBO: 0</div>
-            </div>
-
             <div class="math-arena">
+                <div id="combo-meter">COMBO: 0</div>
                 <h2 id="question-text">Ready?</h2>
                 <div class="input-group">
                     <input type="number" id="answer-input" placeholder="?" autocomplete="off">
@@ -69,17 +69,22 @@
         </section>
 
         <section id="library-screen" class="screen hidden">
-            <h1 class="glow-text" style="font-size: 1.5rem;">SHORTCUT LIBRARY</h1>
+            <div class="arena-header">
+                <button class="back-link" onclick="showMenu()">← BACK TO MENU</button>
+            </div>
+            <h1 class="glow-text" style="font-size: 1.5rem; margin-top: 10px;">SHORTCUT VAULT</h1>
             <div id="library-content" class="library-grid"></div>
-            <button class="menu-btn" onclick="showMenu()">BACK TO MENU</button>
         </section>
 
         <div id="result-modal" class="modal hidden">
             <div class="modal-content">
                 <h2 id="result-title">ANALYSIS</h2>
                 <div id="explanation-box"></div>
-                <div class="stat-row">XP GAINED: <span id="reward-xp" class="highlight">0</span></div>
-                <button class="restart-btn" onclick="showMenu()">CONTINUE</button>
+                <div class="stat-row">XP EARNED: <span id="reward-xp" class="highlight">0</span></div>
+                <div class="modal-actions">
+                    <button id="modal-continue-btn" class="action-btn primary">NEXT QUESTION</button>
+                    <button onclick="showMenu()" class="action-btn secondary">QUIT TO MENU</button>
+                </div>
             </div>
         </div>
     </div>

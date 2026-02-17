@@ -1,212 +1,103 @@
-// Game Logic State
-let state = {
-    xp: parseInt(localStorage.getItem('xp_arena')) || 0,
-    combo: 0,
-    multiplier: 1,
-    mode: '',
-    playerHP: 100,
-    aiHP: 100,
-    currentProblem: null,
-    timer: 60,
-    aiTimer: null
-};
-
-const PROBLEMS = [
-    {   // Multiplication by 11
-        type: 'five',
-        gen: () => {
-            const n = Math.floor(Math.random() * 80) + 11;
-            return { q: `${n} × 11`, a: n * 11, hint: `Split ${n}: ${Math.floor(n/10)} | (${Math.floor(n/10) + n%10}) | ${n%10}` };
-        }
-    },
-    {   // Squares ending in 5
-        type: 'five',
-        gen: () => {
-            const n = (Math.floor(Math.random() * 9) + 1) * 10 + 5;
-            const firstPart = Math.floor(n/10);
-            return { q: `${n}²`, a: n * n, hint: `${firstPart} × ${firstPart+1} then attach 25. (${firstPart*(firstPart+1)})25` };
-        }
-    },
-    {   // Near 100
-        type: 'near',
-        gen: () => {
-            const n = 99 - Math.floor(Math.random() * 5);
-            const m = Math.floor(Math.random() * 9) + 2;
-            return { q: `${n} × ${m}`, a: n * m, hint: `(100 - ${100-n}) × ${m} = ${100*m} - ${(100-n)*m}` };
-        }
-    },
-    {   // Times 9
-        type: 'nine',
-        gen: () => {
-            const n = Math.floor(Math.random() * 50) + 12;
-            return { q: `${n} × 9`, a: n * 9, hint: `${n}0 - ${n} = ${n*9}` };
-        }
-    }
-];
-
-const RANKS = ["Novice", "Scholar", "Mathlete", "Calculus Ninja", "Quantum Mind", "DEITY"];
-
-// Initialization
-function updateStats() {
-    const level = Math.floor(state.xp / 200);
-    const nextLevelXP = (level + 1) * 200;
-    const rankIndex = Math.min(level, RANKS.length - 1);
-    
-    document.getElementById('xp-val').innerText = state.xp;
-    document.getElementById('next-level-xp').innerText = nextLevelXP;
-    document.getElementById('rank-display').innerText = `Rank: ${RANKS[rankIndex]}`;
-    document.getElementById('xp-fill').style.width = `${(state.xp % 200) / 2}%`;
-    
-    localStorage.setItem('xp_arena', state.xp);
+:root {
+    --bg: #050505;
+    --card: #111115;
+    --neon-blue: #00f2ff;
+    --neon-purple: #9d00ff;
+    --neon-pink: #ff007b;
+    --neon-green: #39ff14;
+    --text: #ffffff;
 }
 
-function startGame(mode) {
-    state.mode = mode;
-    state.combo = 0;
-    state.multiplier = 1;
-    state.playerHP = 100;
-    state.aiHP = 100;
-    
-    document.getElementById('game-menu').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-    
-    if(mode === 'battle') {
-        document.getElementById('battle-stats').classList.remove('hidden');
-        startAIAttack();
-    }
-    if(mode === 'speed') startTimer();
-    
-    nextQuestion();
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
 }
 
-function nextQuestion() {
-    const pType = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
-    state.currentProblem = pType.gen();
-    state.currentProblem.category = pType.type;
-    
-    const qText = document.getElementById('question-text');
-    qText.innerText = state.currentProblem.q;
-    qText.classList.remove('shake');
-    
-    document.getElementById('answer-input').value = '';
-    document.getElementById('answer-input').focus();
-    
-    if(state.mode === 'training') {
-        document.getElementById('method-selector').classList.remove('hidden');
-    }
+.container {
+    width: 400px;
+    background: var(--card);
+    border: 1px solid #333;
+    padding: 25px;
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-function checkAnswer() {
-    const val = parseInt(document.getElementById('answer-input').value);
-    const isCorrect = (val === state.currentProblem.a);
+/* Stats & XP */
+.stats-top { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; color: var(--neon-blue); }
+.xp-container { height: 6px; background: #222; margin: 8px 0; border-radius: 10px; overflow: hidden; }
+.xp-fill { width: 0%; height: 100%; background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); transition: width 0.4s ease; }
+.xp-info { font-size: 0.7rem; text-align: right; color: #888; }
 
-    if(isCorrect) {
-        processCorrect();
-    } else {
-        processWrong();
-    }
-    updateStats();
+/* Menu Cards */
+.mode-selector { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.mode-card {
+    background: #1a1a20;
+    border: 1px solid #333;
+    padding: 12px 15px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+.mode-card:hover { border-color: var(--neon-blue); background: #22222b; }
+.mode-card h3 { margin: 0; color: var(--neon-blue); font-size: 0.9rem; }
+.mode-card p { margin: 4px 0 0; color: #888; font-size: 0.75rem; }
+.library-btn { border-color: var(--neon-purple); }
+.library-btn h3 { color: var(--neon-purple); }
+
+/* Game Elements */
+.glow-text { text-align: center; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); margin: 0; }
+.game-hud { display: flex; justify-content: space-between; margin: 15px 0; font-size: 0.9rem; font-weight: bold; }
+#question-text { font-size: 2.5rem; text-align: center; margin: 20px 0; letter-spacing: 2px; }
+
+/* Input */
+.input-group { display: flex; gap: 10px; }
+#answer-input {
+    flex: 1;
+    background: #000;
+    border: 1px solid #444;
+    color: var(--neon-green);
+    font-size: 1.5rem;
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+}
+#submit-btn {
+    background: var(--neon-blue);
+    border: none;
+    padding: 0 20px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-function processCorrect() {
-    state.combo++;
-    state.multiplier = state.combo > 5 ? 2 : 1;
-    
-    if(state.multiplier > 1) {
-        document.getElementById('multiplier-badge').classList.remove('hidden');
-        document.getElementById('question-text').classList.add('multiplier-glow');
-    }
+/* HP Bars */
+#battle-stats { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.hp-bar { width: 100px; height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
+.hp-fill { width: 100%; height: 100%; background: var(--neon-green); transition: 0.3s; }
+.enemy .hp-fill { background: var(--neon-pink); }
 
-    let xpGain = 20 * state.multiplier;
-    state.xp += xpGain;
-    
-    if(state.mode === 'battle') {
-        state.aiHP -= 15;
-        updateHP();
-    }
+/* Library */
+.library-grid { max-height: 350px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
+.library-card { background: #1a1a20; padding: 12px; border-radius: 5px; margin-bottom: 10px; border-left: 3px solid var(--neon-blue); }
+.library-card h4 { margin: 0 0 5px; color: var(--neon-blue); font-size: 0.9rem; }
+.library-card p { font-size: 0.75rem; color: #bbb; margin: 0; }
+.example-box { background: #000; color: var(--neon-green); padding: 5px; font-size: 0.8rem; margin-top: 8px; border-radius: 3px; }
 
-    if(state.mode === 'training') {
-        showModal("SUCCESS", state.currentProblem.hint, xpGain);
-    } else {
-        nextQuestion();
-    }
-    
-    document.getElementById('combo-meter').innerText = `COMBO: ${state.combo}`;
-}
+/* Modal */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-content { background: var(--card); border: 1px solid var(--neon-blue); padding: 30px; text-align: center; width: 80%; border-radius: 10px; }
+#explanation-box { font-size: 0.85rem; color: #ccc; margin: 15px 0; line-height: 1.4; }
+.highlight { color: var(--neon-blue); font-size: 1.2rem; }
+.menu-btn, .restart-btn { background: none; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-top: 10px; width: 100%; }
 
-function processWrong() {
-    state.combo = 0;
-    state.multiplier = 1;
-    document.getElementById('multiplier-badge').classList.add('hidden');
-    document.getElementById('question-text').classList.remove('multiplier-glow');
-    document.getElementById('main-container').classList.add('shake');
-    setTimeout(() => document.getElementById('main-container').classList.remove('shake'), 300);
-
-    if(state.mode === 'battle') {
-        state.playerHP -= 20;
-        updateHP();
-    }
-    
-    showModal("FAILED", `Correct: ${state.currentProblem.a}. Shortcut: ${state.currentProblem.hint}`, 0);
-}
-
-function updateHP() {
-    document.getElementById('player-hp').style.width = state.playerHP + '%';
-    document.getElementById('ai-hp').style.width = state.aiHP + '%';
-    
-    if(state.playerHP <= 0) endGame("AI NEURAL OVERLOADED YOU.");
-    if(state.aiHP <= 0) endGame("AI SHUTDOWN. YOU WIN!");
-}
-
-function startAIAttack() {
-    // AI attacks every 4 to 7 seconds
-    state.aiTimer = setInterval(() => {
-        state.playerHP -= 5;
-        updateHP();
-        document.getElementById('main-container').classList.add('shake');
-        setTimeout(() => document.getElementById('main-container').classList.remove('shake'), 200);
-    }, 6000);
-}
-
-function startTimer() {
-    state.timer = 60;
-    const tDisplay = document.getElementById('timer-display');
-    tDisplay.classList.remove('hidden');
-    
-    const interval = setInterval(() => {
-        state.timer--;
-        tDisplay.innerText = `00:${state.timer < 10 ? '0' + state.timer : state.timer}`;
-        if(state.timer <= 0 || state.mode !== 'speed') {
-            clearInterval(interval);
-            if(state.timer <= 0) endGame("TIME EXPIRED");
-        }
-    }, 1000);
-}
-
-function showModal(title, explain, xp) {
-    document.getElementById('result-title').innerText = title;
-    document.getElementById('explanation-box').innerText = explain;
-    document.getElementById('reward-xp').innerText = xp;
-    document.getElementById('result-modal').classList.remove('hidden');
-}
-
-function endGame(msg) {
-    clearInterval(state.aiTimer);
-    showModal("MISSION END", msg, "FINAL SCORE: " + state.combo);
-}
-
-function showMenu() {
-    state.mode = '';
-    clearInterval(state.aiTimer);
-    document.getElementById('result-modal').classList.add('hidden');
-    document.getElementById('game-screen').classList.add('hidden');
-    document.getElementById('game-menu').classList.remove('hidden');
-    document.getElementById('battle-stats').classList.add('hidden');
-}
-
-// Event Listeners
-document.getElementById('submit-btn').onclick = checkAnswer;
-document.getElementById('answer-input').onkeypress = (e) => { if(e.key === 'Enter') checkAnswer(); };
-
-// Init
-updateStats();
+.hidden { display: none !important; }
+.shake { animation: shake 0.3s; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }

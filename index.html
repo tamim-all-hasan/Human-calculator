@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mental Arena Pro | Advanced Math Training</title>
+    <title>Mental Arena Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
             <div class="xp-container">
                 <div class="xp-fill" id="xp-fill"></div>
             </div>
-            <div class="xp-info">XP: <span id="xp-val">0</span> / <span id="next-level-xp">100</span></div>
+            <div class="xp-info">XP: <span id="xp-val">0</span> / <span id="next-level-xp">200</span></div>
         </header>
 
         <main id="game-menu" class="screen">
@@ -24,15 +24,19 @@
             <div class="mode-selector">
                 <button class="mode-card" onclick="startGame('training')">
                     <h3>TRAINING</h3>
-                    <p>Learn shortcuts with guides</p>
+                    <p>Learn shortcuts with guided hints</p>
                 </button>
                 <button class="mode-card" onclick="startGame('speed')">
                     <h3>SPEED RUN</h3>
-                    <p>60s Chaos Mode</p>
+                    <p>60s High-Pressure Challenge</p>
                 </button>
                 <button class="mode-card" onclick="startGame('battle')">
                     <h3>BATTLE AI</h3>
-                    <p>Survival of the fastest</p>
+                    <p>Fight against the Neural Overlord</p>
+                </button>
+                <button class="mode-card library-btn" onclick="showLibrary()">
+                    <h3>SHORTCUT LIBRARY</h3>
+                    <p>Study the secrets of mental math</p>
                 </button>
             </div>
         </main>
@@ -57,14 +61,6 @@
 
             <div class="math-arena">
                 <h2 id="question-text">Ready?</h2>
-                <div id="method-selector" class="hidden">
-                    <div class="method-chips">
-                        <button class="chip" data-method="near">Near 100</button>
-                        <button class="chip" data-method="nine">×9 Rule</button>
-                        <button class="chip" data-method="five">×5 / ×11</button>
-                        <button class="chip" data-method="double">Double</button>
-                    </div>
-                </div>
                 <div class="input-group">
                     <input type="number" id="answer-input" placeholder="?" autocomplete="off">
                     <button id="submit-btn">ENTER</button>
@@ -72,12 +68,18 @@
             </div>
         </section>
 
+        <section id="library-screen" class="screen hidden">
+            <h1 class="glow-text" style="font-size: 1.5rem;">SHORTCUT LIBRARY</h1>
+            <div id="library-content" class="library-grid"></div>
+            <button class="menu-btn" onclick="showMenu()">BACK TO MENU</button>
+        </section>
+
         <div id="result-modal" class="modal hidden">
             <div class="modal-content">
                 <h2 id="result-title">ANALYSIS</h2>
                 <div id="explanation-box"></div>
                 <div class="stat-row">XP GAINED: <span id="reward-xp" class="highlight">0</span></div>
-                <button class="restart-btn" onclick="showMenu()">BACK TO BASE</button>
+                <button class="restart-btn" onclick="showMenu()">CONTINUE</button>
             </div>
         </div>
     </div>

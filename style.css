@@ -1,0 +1,98 @@
+:root {
+    --bg: #050505;
+    --card: #111115;
+    --neon-blue: #00f2ff;
+    --neon-purple: #9d00ff;
+    --neon-pink: #ff007b;
+    --neon-green: #39ff14;
+    --text: #ffffff;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    width: 450px;
+    background: var(--card);
+    border: 1px solid #333;
+    padding: 25px;
+    border-radius: 5px;
+    position: relative;
+}
+
+/* Advanced XP Bar */
+.xp-container { height: 4px; background: #222; margin-top: 10px; overflow: hidden; }
+.xp-fill { width: 0%; height: 100%; background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+/* Mode Selection */
+.mode-selector { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
+.mode-card {
+    background: #1a1a20;
+    border: 1px solid #333;
+    padding: 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.mode-card:hover { border-color: var(--neon-blue); transform: scale(1.02); }
+.mode-card h3 { margin: 0; color: var(--neon-blue); font-size: 1rem; }
+.mode-card p { margin: 5px 0 0; color: #888; font-size: 0.8rem; }
+
+/* Arena Styling */
+.glow-text { text-align: center; color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); font-size: 2.2rem; }
+.math-arena { margin-top: 40px; text-align: center; }
+#question-text { font-size: 3rem; margin-bottom: 20px; letter-spacing: 5px; }
+
+/* Input Styling */
+.input-group { display: flex; gap: 10px; margin-top: 20px; }
+#answer-input {
+    flex: 1;
+    background: #000;
+    border: 1px solid #444;
+    color: var(--neon-green);
+    font-size: 1.5rem;
+    padding: 10px;
+    text-align: center;
+}
+#submit-btn {
+    background: var(--neon-blue);
+    border: none;
+    color: #000;
+    font-weight: bold;
+    padding: 0 20px;
+    cursor: pointer;
+}
+
+/* Battle HUD */
+#battle-stats { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+.hp-bar { width: 120px; height: 10px; background: #222; border: 1px solid #444; }
+.hp-fill { width: 100%; height: 100%; background: var(--neon-green); transition: 0.3s; }
+.enemy .hp-fill { background: var(--neon-pink); }
+.vs-text { font-weight: bold; color: var(--neon-pink); }
+
+/* Animation Classes */
+.shake { animation: shake 0.3s ease-in-out; }
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.multiplier-glow { color: var(--neon-pink) !important; text-shadow: 0 0 20px var(--neon-pink) !important; }
+
+/* Hidden Class */
+.hidden { display: none !important; }
+
+/* Modal */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: #111; border: 1px solid var(--neon-blue); padding: 40px; text-align: center; width: 300px; }
+.highlight { color: var(--neon-blue); font-weight: bold; font-size: 1.5rem; }
+.restart-btn { margin-top: 20px; background: none; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 20px; cursor: pointer; }

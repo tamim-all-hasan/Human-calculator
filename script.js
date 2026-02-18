@@ -1,191 +1,165 @@
 let state = {
-    xp: parseInt(localStorage.getItem('math_arena_pro_xp')) || 0,
-    combo: 0,
+    xp: parseInt(localStorage.getItem('math_arena_xp')) || 0,
     mode: '',
-    playerHP: 100,
-    aiHP: 100,
-    timer: 60,
     currentProblem: null,
+    timer: 0,
     timerInterval: null,
-    aiAttackInterval: null
+    // Test Stats
+    correct: 0,
+    wrong: 0,
+    skipped: 0,
+    totalToAsk: 0,
+    askedCount: 0
 };
 
-// Advanced Shortcut Library Logic
 const PROBLEMS = [
-    { type: "mul11", gen: () => {
-        const n = Math.floor(Math.random() * 85) + 12;
-        return { q: `${n} × 11`, a: n * 11, hint: `Put the sum of ${Math.floor(n/10)} and ${n%10} in the middle: ${Math.floor(n/10)}|${Math.floor(n/10)+n%10}|${n%10}` };
-    }},
-    { type: "sq5", gen: () => {
-        const n = (Math.floor(Math.random() * 9) + 1) * 10 + 5;
-        const f = Math.floor(n/10);
-        return { q: `${n}²`, a: n * n, hint: `${f} × ${f+1} = ${f*(f+1)}... then attach 25.` };
-    }},
-    { type: "div5", gen: () => {
-        const n = (Math.floor(Math.random() * 45) + 5) * 2;
-        return { q: `${n} ÷ 5`, a: n / 5, hint: `Double the number (${n*2}) then move decimal point: ${n*2/10}` };
-    }},
-    { type: "sub99", gen: () => {
-        const n = Math.floor(Math.random() * 500) + 150;
-        return { q: `${n} - 99`, a: n - 99, hint: `Subtract 100 and add 1: (${n}-100) + 1` };
-    }},
-    { type: "near100", gen: () => {
-        const n = 100 - (Math.floor(Math.random() * 4) + 1);
-        const m = Math.floor(Math.random() * 6) + 3;
-        return { q: `${n} × ${m}`, a: n * m, hint: `Think (100-${100-n}) × ${m} = ${100*m} - ${(100-n)*m}` };
-    }},
-    { type: "add98", gen: () => {
-        const n = Math.floor(Math.random() * 400) + 100;
-        return { q: `${n} + 98`, a: n + 98, hint: `Add 100 and subtract 2: (${n}+100) - 2` };
-    }}
+    { type: "mul11", gen: (n) => ({ q: `${n} × 11`, a: n * 11, h: "Split digits & add" }) },
+    { type: "sq5", gen: (n) => { let f = Math.floor(n/10); return { q: `${n}²`, a: n * n, h: `${f}×${f+1} then 25` } } },
+    { type: "div5", gen: (n) => ({ q: `${n} ÷ 5`, a: n / 5, h: "Double then dot" }) },
+    { type: "near100", gen: (n) => ({ q: `98 × ${n}`, a: 98 * n, h: "98 = 100-2" }) }
 ];
 
-const libraryData = [
-    { title: "Addition: Rounding", desc: "98 ba 99 jog korte hole 100 jog kore extra tuku biyog koro.", ex: "145 + 98 → 245 - 2 = 243" },
-    { title: "Subtraction: Rounding", desc: "99 biyog korte hole 100 biyog kore 1 jog koro.", ex: "350 - 99 → 250 + 1 = 251" },
-    { title: "Division by 5", desc: "Shonkha tike double kore 10 diye vag (ek ghor age decimal) koro.", ex: "42 ÷ 5 → 84 ÷ 10 = 8.4" },
-    { title: "Multiplication by 11", desc: "Duiti digit-er jogfol majhkhan-e boshaw.", ex: "53 × 11 → 5 (5+3) 3 = 583" },
-    { title: "Square Numbers (Ends in 5)", desc: "Prothom digit × (Prothom digit + 1) ebong sheshe 25.", ex: "45² → (4×5) and 25 = 2025" },
-    { title: "Near 100 Multiplication", desc: "Treat 97 as (100 - 3) and distribute.", ex: "97 × 4 → 400 - 12 = 388" }
-];
-
-// --- Core Logic ---
-
-function updateUI() {
-    const level = Math.floor(state.xp / 200);
-    const ranks = ['Novice', 'Sage', 'Math-King', 'God'];
-    document.getElementById('rank-display').innerText = `Rank: ${ranks[Math.min(level, 3)]}`;
-    document.getElementById('xp-val').innerText = state.xp;
-    document.getElementById('next-level-xp').innerText = (level + 1) * 200;
-    document.getElementById('xp-fill').style.width = `${Math.min((state.xp % 200) / 2, 100)}%`;
-    localStorage.setItem('math_arena_pro_xp', state.xp);
+function updateXP() {
+    document.getElementById('xp-fill').style.width = (state.xp % 200 / 2) + '%';
+    document.getElementById('rank-display').innerText = `Rank: ${state.xp > 1000 ? 'Sage' : 'Novice'}`;
+    localStorage.setItem('math_arena_xp', state.xp);
 }
 
-function showLibrary() {
-    hideAllScreens();
-    document.getElementById('library-screen').classList.remove('hidden');
-    const container = document.getElementById('library-content');
-    container.innerHTML = libraryData.map(d => `
-        <div class="library-card">
-            <h4>${d.title}</h4>
-            <p>${d.desc}</p>
-            <div class="example-box">Example: ${d.ex}</div>
-        </div>
-    `).join('');
+function openConfig() {
+    hideAll();
+    document.getElementById('config-screen').classList.remove('hidden');
 }
 
 function startGame(mode) {
     state.mode = mode;
-    state.combo = 0;
-    state.playerHP = 100;
-    state.aiHP = 100;
-    hideAllScreens();
-    document.getElementById('game-screen').classList.remove('hidden');
+    state.correct = 0; state.wrong = 0; state.skipped = 0; state.askedCount = 0;
     
-    if(mode === 'battle') {
-        document.getElementById('battle-stats').classList.remove('hidden');
-        state.aiAttackInterval = setInterval(() => {
-            state.playerHP -= 10;
-            updateHP();
-            triggerShake();
-        }, 7000);
+    if(mode === 'rapid') {
+        state.totalToAsk = parseInt(document.getElementById('test-qty').value);
+        state.timer = parseInt(document.getElementById('test-duration').value) * 60;
+        document.getElementById('mcq-mode-ui').classList.remove('hidden');
+        document.getElementById('input-mode-ui').classList.add('hidden');
+        startTimer();
+    } else {
+        state.totalToAsk = 999; // Infinite for training
+        document.getElementById('mcq-mode-ui').classList.add('hidden');
+        document.getElementById('input-mode-ui').classList.remove('hidden');
     }
-    if(mode === 'speed') startTimer();
+
+    hideAll();
+    document.getElementById('game-screen').classList.remove('hidden');
     nextQuestion();
 }
 
 function nextQuestion() {
-    const p = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
-    state.currentProblem = p.gen();
-    document.getElementById('question-text').innerText = state.currentProblem.q;
-    const input = document.getElementById('answer-input');
-    input.value = '';
-    input.focus();
-    document.getElementById('combo-meter').innerText = `COMBO: ${state.combo}`;
-    document.getElementById('result-modal').classList.add('hidden');
-}
-
-function checkAnswer() {
-    const inputVal = document.getElementById('answer-input').value;
-    if(!inputVal) return;
+    if(state.askedCount >= state.totalToAsk) return finishTest();
     
-    const ans = parseFloat(inputVal);
-    const correct = (ans === state.currentProblem.a);
+    state.askedCount++;
+    document.getElementById('q-counter').innerText = `Q: ${state.askedCount}/${state.mode==='rapid'?state.totalToAsk:'∞'}`;
+    
+    // Generate Random Problem
+    const pBase = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
+    let n = Math.floor(Math.random() * 50) + 12;
+    if(pBase.type === "sq5") n = (Math.floor(Math.random()*9)+1)*10+5;
+    
+    state.currentProblem = pBase.gen(n);
+    document.getElementById('question-text').innerText = state.currentProblem.q;
 
-    if(correct) {
-        state.combo++;
-        state.xp += 25;
-        if(state.mode === 'battle') state.aiHP -= 20;
-        showFeedback(true, `Excellence! ${state.currentProblem.hint}`);
+    if(state.mode === 'rapid') {
+        generateMCQOptions(state.currentProblem.a);
     } else {
-        state.combo = 0;
-        if(state.mode === 'battle') state.playerHP -= 20;
-        triggerShake();
-        showFeedback(false, `System Error! Correct: ${state.currentProblem.a}. Strategy: ${state.currentProblem.hint}`);
+        document.getElementById('answer-input').value = '';
+        document.getElementById('answer-input').focus();
     }
-    updateHP();
-    updateUI();
 }
 
-function showFeedback(isCorrect, text) {
-    document.getElementById('result-title').innerText = isCorrect ? "SUCCESS" : "FAILED";
-    document.getElementById('result-title').style.color = isCorrect ? "var(--neon-green)" : "var(--neon-pink)";
-    document.getElementById('explanation-box').innerText = text;
-    document.getElementById('reward-xp').innerText = isCorrect ? "25" : "0";
-    document.getElementById('modal-continue-btn').onclick = nextQuestion;
-    document.getElementById('result-modal').classList.remove('hidden');
+function generateMCQOptions(correct) {
+    const btns = document.querySelectorAll('.mcq-btn');
+    let options = [correct];
+    while(options.length < 4) {
+        let fake = correct + (Math.floor(Math.random()*20) - 10);
+        if(!options.includes(fake) && fake > 0) options.push(fake);
+    }
+    options.sort(() => Math.random() - 0.5);
+    btns.forEach((btn, i) => btn.innerText = options[i]);
 }
 
-function updateHP() {
-    if(state.mode !== 'battle') return;
-    document.getElementById('player-hp').style.width = Math.max(state.playerHP, 0) + '%';
-    document.getElementById('ai-hp').style.width = Math.max(state.aiHP, 0) + '%';
-    if(state.playerHP <= 0) endGame("AI DEFEATED YOU");
-    if(state.aiHP <= 0) endGame("AI NEURAL PURGED!");
+function checkMCQ(btn) {
+    const val = parseInt(btn.innerText);
+    if(val === state.currentProblem.a) {
+        state.correct++;
+        state.xp += 10;
+        nextQuestion();
+    } else {
+        state.wrong++;
+        nextQuestion();
+    }
+    updateXP();
+}
+
+// Training Mode Submit
+document.getElementById('submit-btn').onclick = () => {
+    const val = parseInt(document.getElementById('answer-input').value);
+    if(val === state.currentProblem.a) {
+        state.correct++; state.xp += 15;
+        showModal("CORRECT", state.currentProblem.h);
+    } else {
+        state.wrong++;
+        showModal("WRONG", `Correct: ${state.currentProblem.a}. ${state.currentProblem.h}`);
+    }
+    updateXP();
+};
+
+function skipQuestion() {
+    state.skipped++;
+    nextQuestion();
 }
 
 function startTimer() {
-    state.timer = 60;
-    document.getElementById('timer-display').classList.remove('hidden');
+    clearInterval(state.timerInterval);
     state.timerInterval = setInterval(() => {
         state.timer--;
-        document.getElementById('timer-display').innerText = `00:${state.timer < 10 ? '0'+state.timer : state.timer}`;
-        if(state.timer <= 0) endGame("TIME DEPLETED");
+        let m = Math.floor(state.timer/60);
+        let s = state.timer%60;
+        document.getElementById('timer-display').innerText = `${m}:${s<10?'0'+s:s}`;
+        if(state.timer <= 0) finishTest();
     }, 1000);
 }
 
-function endGame(msg) {
+function finishTest() {
     clearInterval(state.timerInterval);
-    clearInterval(state.aiAttackInterval);
-    showFeedback(false, msg);
+    const total = state.correct + state.wrong + state.skipped;
+    const accuracy = Math.round((state.correct / (state.askedCount || 1)) * 100);
+    
+    document.getElementById('stat-correct').innerText = state.correct;
+    document.getElementById('stat-wrong').innerText = state.wrong;
+    document.getElementById('stat-skipped').innerText = state.skipped;
+    document.getElementById('final-progress-fill').style.width = accuracy + '%';
+    
+    showModal("TEST COMPLETE", `Accuracy: ${accuracy}%`);
     document.getElementById('modal-continue-btn').onclick = showMenu;
 }
 
-function hideAllScreens() {
-    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-    document.getElementById('battle-stats').classList.add('hidden');
-    document.getElementById('timer-display').classList.add('hidden');
-    clearInterval(state.timerInterval);
-    clearInterval(state.aiAttackInterval);
+function showModal(title, text) {
+    document.getElementById('result-title').innerText = title;
+    document.getElementById('explanation-box').innerText = text;
+    document.getElementById('result-modal').classList.remove('hidden');
+    document.getElementById('modal-continue-btn').onclick = nextQuestion;
+}
+
+function hideAll() {
+    document.querySelectorAll('.screen, .modal').forEach(s => s.classList.add('hidden'));
 }
 
 function showMenu() {
-    hideAllScreens();
-    document.getElementById('result-modal').classList.add('hidden');
+    hideAll(); clearInterval(state.timerInterval);
     document.getElementById('game-menu').classList.remove('hidden');
 }
 
-function confirmExit() {
-    if(confirm("Quit game?")) showMenu();
+function showLibrary() {
+    hideAll();
+    document.getElementById('library-screen').classList.remove('hidden');
+    document.getElementById('library-content').innerHTML = "Study the techniques in Training Mode!";
 }
 
-function triggerShake() {
-    const c = document.getElementById('main-container');
-    c.classList.add('shake');
-    setTimeout(() => c.classList.remove('shake'), 300);
-}
-
-document.getElementById('submit-btn').onclick = checkAnswer;
-document.getElementById('answer-input').onkeyup = (e) => e.key === 'Enter' && checkAnswer();
-
-updateUI();
+updateXP();

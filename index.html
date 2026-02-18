@@ -1,64 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Human Calculator Training</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+let correctAnswer;
+let difficulty = 1;
+let timer;
+let timeLeft = 100;
+let challengeMode = false;
 
-<h1 class="title">⚡ Human Calculator Arena ⚡</h1>
+function setDifficulty(level){
+    difficulty = level;
+    alert("Difficulty Set!");
+}
 
-<div class="menu">
-    <button onclick="startTraining()">Training Mode</button>
-    <button onclick="startChallenge()">Speed Challenge</button>
-    <button onclick="toggleVault()">Vault</button>
-</div>
+function generateQuestion(){
+    let max = difficulty === 1 ? 20 : difficulty === 2 ? 50 : 100;
 
-<!-- Difficulty -->
-<div class="difficulty">
-    <p>Select Difficulty:</p>
-    <button onclick="setDifficulty(1)">Easy</button>
-    <button onclick="setDifficulty(2)">Medium</button>
-    <button onclick="setDifficulty(3)">Hard</button>
-</div>
+    let num1 = Math.floor(Math.random() * max);
+    let num2 = Math.floor(Math.random() * max);
 
-<!-- Game Section -->
-<div id="gameSection" class="hidden fade">
-    <h2 id="question"></h2>
-    <input type="number" id="answer" placeholder="Your Answer">
-    <button onclick="checkAnswer()">Submit</button>
-    <p id="feedback"></p>
-    <button onclick="exitGame()">Exit</button>
+    let operators = ["+","-","*"];
+    let operator = operators[Math.floor(Math.random()*operators.length)];
 
-    <!-- Progress Bar -->
-    <div id="progressContainer" class="hidden">
-        <div id="progressBar"></div>
-    </div>
-</div>
+    if(operator === "+") correctAnswer = num1 + num2;
+    if(operator === "-") correctAnswer = num1 - num2;
+    if(operator === "*") correctAnswer = num1 * num2;
 
-<!-- Vault Section -->
-<div id="vault" class="hidden fade">
-    <h2>🧠 Shortcut Vault</h2>
+    document.getElementById("question").innerText = `${num1} ${operator} ${num2}`;
+}
 
-    <div class="technique">
-        <h3 class="green">×11 Trick</h3>
-        <p>For 23 × 11 → 2 (2+3) 3 → 253</p>
-    </div>
+function startTraining(){
+    challengeMode = false;
+    document.getElementById("gameSection").classList.remove("hidden");
+    document.getElementById("progressContainer").classList.add("hidden");
+    generateQuestion();
+}
 
-    <div class="technique">
-        <h3 class="orange">×5 Trick</h3>
-        <p>Multiply by 10 then divide by 2.</p>
-    </div>
+function startChallenge(){
+    challengeMode = true;
+    document.getElementById("gameSection").classList.remove("hidden");
+    document.getElementById("progressContainer").classList.remove("hidden");
+    timeLeft = 100;
+    generateQuestion();
+    startTimer();
+}
 
-    <div class="technique">
-        <h3 class="green">Near 100 Trick</h3>
-        <p>98 × 97 → (100-2)(100-3)</p>
-    </div>
+function startTimer(){
+    timer = setInterval(()=>{
+        timeLeft--;
+        document.getElementById("progressBar").style.width = timeLeft + "%";
+        if(timeLeft <= 0){
+            clearInterval(timer);
+            document.getElementById("feedback").innerText = "⏳ Time Over!";
+        }
+    },100);
+}
 
-</div>
+function checkAnswer(){
+    let userAnswer = Number(document.getElementById("answer").value);
+    let feedback = document.getElementById("feedback");
 
-<script src="script.js"></script>
-</body>
-</html>
+    if(userAnswer === correctAnswer){
+        feedback.innerHTML = "<span class='green'>Correct 🔥</span>";
+        document.getElementById("answer").value = "";
+        generateQuestion();
+    } else {
+        feedback.innerHTML = "<span class='orange'>Wrong ❌</span><br>Rule: Practice base arithmetic focus.";
+    }
+}
+
+function exitGame(){
+    document.getElementById("gameSection").classList.add("hidden");
+    clearInterval(timer);
+    document.getElementById("feedback").innerText = "";
+}
+
+function toggleVault(){
+    document.getElementById("vault").classList.toggle("hidden");
+}

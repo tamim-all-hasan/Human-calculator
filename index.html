@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mental Arena Pro | Mobile Ready</title>
+    <title>Mental Arena Pro | Advanced Exam System</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,62 +16,66 @@
             <div class="xp-container">
                 <div class="xp-fill" id="xp-fill"></div>
             </div>
-            <div class="xp-info">XP: <span id="xp-val">0</span> / <span id="next-level-xp">200</span></div>
         </header>
 
         <main id="game-menu" class="screen">
             <h1 class="glow-text">MENTAL ARENA</h1>
             <div class="mode-selector">
+                <button class="mode-card rapid" onclick="openConfig()">
+                    <h3>RAPID MCQ TEST</h3>
+                    <p>Custom time & question limits</p>
+                </button>
                 <button class="mode-card" onclick="startGame('training')">
                     <h3>TRAINING MODE</h3>
-                    <p>Practice with shortcut guides</p>
-                </button>
-                <button class="mode-card" onclick="startGame('speed')">
-                    <h3>SPEED CHALLENGE</h3>
-                    <p>60s Rapid Fire</p>
-                </button>
-                <button class="mode-card" onclick="startGame('battle')">
-                    <h3>BATTLE AI</h3>
-                    <p>Combat the Neural Overlord</p>
+                    <p>Step-by-step math guides</p>
                 </button>
                 <button class="mode-card library-btn" onclick="showLibrary()">
                     <h3>THE VAULT</h3>
-                    <p>Advanced Math Techniques</p>
+                    <p>Shortcut Techniques</p>
                 </button>
             </div>
         </main>
 
+        <section id="config-screen" class="screen hidden">
+            <h2 class="glow-text small">TEST CONFIG</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label>Duration (Minutes)</label>
+                    <input type="number" id="test-duration" value="1" min="1" max="10">
+                </div>
+                <div class="config-item">
+                    <label>Total Questions</label>
+                    <input type="number" id="test-qty" value="10" min="5" max="50">
+                </div>
+            </div>
+            <button class="action-btn primary" onclick="startGame('rapid')">START RAPID TEST</button>
+            <button class="back-link" onclick="showMenu()">← BACK</button>
+        </section>
+
         <section id="game-screen" class="screen hidden">
             <div class="arena-header">
-                <button class="back-link" onclick="confirmExit()">← EXIT</button>
-                <div id="timer-display" class="hud-item hidden">00:60</div>
-            </div>
-
-            <div id="battle-stats" class="hidden">
-                <div class="hp-block">
-                    <label>YOU</label>
-                    <div class="hp-bar"><div id="player-hp" class="hp-fill"></div></div>
-                </div>
-                <div class="hp-block">
-                    <label>AI</label>
-                    <div class="hp-bar enemy"><div id="ai-hp" class="hp-fill"></div></div>
-                </div>
+                <div id="timer-display" class="hud-item">00:00</div>
+                <div id="q-counter" class="hud-item">Q: 0/0</div>
+                <button class="skip-btn" id="skip-btn" onclick="skipQuestion()">SKIP ↷</button>
             </div>
 
             <div class="math-arena">
-                <div id="combo-meter">COMBO: 0</div>
                 <h2 id="question-text">Ready?</h2>
-                <div class="input-group">
+                <div id="input-mode-ui" class="input-group">
                     <input type="number" id="answer-input" inputmode="numeric" placeholder="?">
                     <button id="submit-btn">GO</button>
+                </div>
+                <div id="mcq-mode-ui" class="mcq-grid hidden">
+                    <button class="mcq-btn" onclick="checkMCQ(this)"></button>
+                    <button class="mcq-btn" onclick="checkMCQ(this)"></button>
+                    <button class="mcq-btn" onclick="checkMCQ(this)"></button>
+                    <button class="mcq-btn" onclick="checkMCQ(this)"></button>
                 </div>
             </div>
         </section>
 
         <section id="library-screen" class="screen hidden">
-            <div class="arena-header">
-                <button class="back-link" onclick="showMenu()">← BACK</button>
-            </div>
+            <button class="back-link" onclick="showMenu()">← BACK</button>
             <h2 class="glow-text small">SHORTCUT VAULT</h2>
             <div id="library-content" class="library-grid"></div>
         </section>
@@ -80,9 +84,19 @@
             <div class="modal-content">
                 <h2 id="result-title">ANALYSIS</h2>
                 <div id="explanation-box"></div>
-                <div class="stat-row">XP: <span id="reward-xp" class="highlight">0</span></div>
+                
+                <div class="report-stats">
+                    <div class="report-item">✅ Correct: <span id="stat-correct">0</span></div>
+                    <div class="report-item">❌ Wrong: <span id="stat-wrong">0</span></div>
+                    <div class="report-item">⏭️ Skipped: <span id="stat-skipped">0</span></div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar-final" id="final-progress-fill"></div>
+                </div>
+
                 <div class="modal-actions">
-                    <button id="modal-continue-btn" class="action-btn primary">NEXT</button>
+                    <button id="modal-continue-btn" class="action-btn primary">CONTINUE</button>
                     <button onclick="showMenu()" class="action-btn secondary">MENU</button>
                 </div>
             </div>

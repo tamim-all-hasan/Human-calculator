@@ -75,3 +75,5 @@ body{
 25%{transform:translateX(-6px);}
 75%{transform:translateX(6px);}
 }
+.hidden{display:none!important;}
+
